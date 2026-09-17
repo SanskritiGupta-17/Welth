@@ -7,14 +7,14 @@ export const useUserSync = () => {
     const { user } = useUser();
     const setCurrency = useUserStore((state) => state.setCurrency);
     const setNeedsOnboarding = useUserStore((state) => state.setNeedsOnboarding);
-    const authSupabse = useSupabase();
+    const authSupabase = useSupabase();
 
     useEffect(() => {
         if (!user) return;
 
         const syncUser = async () => {
             try {
-                const { data: existingUser, error: fetchError } = await authSupabse
+                const { data: existingUser, error: fetchError } = await authSupabase
                     .from("users")
                     .select("clerk_id, currency")
                     .eq("clerk_id", user.id)
@@ -34,7 +34,7 @@ export const useUserSync = () => {
                 }
 
                 const email = user.emailAddresses[0].emailAddress;
-                const { data: newUser, error: insertError } = await authSupabse
+                const { data: newUser, error: insertError } = await authSupabase
                     .from("users")
                     .upsert({
                         clerk_id: user.id,
@@ -56,7 +56,7 @@ export const useUserSync = () => {
                 setCurrency(newUser?.currency ?? "INR");
                 setNeedsOnboarding(!newUser?.currency);
 
-                const { error: accountError } = await authSupabse
+                const { error: accountError } = await authSupabase
                     .from("accounts")
                     .insert({
                         user_id: user.id,
