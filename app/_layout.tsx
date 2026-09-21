@@ -3,6 +3,9 @@ import { StatusBar } from "expo-status-bar";
 import "../global.css";
 import { tokenCache } from '@clerk/expo/token-cache'
 import { ClerkProvider } from '@clerk/expo'
+import { QueryClientProvider } from "@tanstack/react-query";
+import { queryClient } from "@/lib/query/client";
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY!
 
@@ -13,19 +16,23 @@ if (!publishableKey) {
 export default function RootLayout() {
   return (
     <>
-      <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache}>
-        <StatusBar style="dark" backgroundColor="#0303039f" />
-        <Stack
-          screenOptions={{
-            headerShown: false,
-          }}
-        >
-          <Stack.Screen
-            name="index"
-            options={{ title: "Home" }}
-          />
-        </Stack>
-      </ClerkProvider>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <QueryClientProvider client={queryClient}>
+          <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache}>
+            <StatusBar style="dark" />
+            <Stack
+              screenOptions={{
+                headerShown: false,
+              }}
+            >
+              <Stack.Screen
+                name="index"
+                options={{ title: "Home" }}
+              />
+            </Stack>
+          </ClerkProvider>
+        </QueryClientProvider>
+      </GestureHandlerRootView>
     </>
   );
 }

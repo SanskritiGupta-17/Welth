@@ -1,0 +1,16 @@
+import { useUser } from "@clerk/expo";
+import { useSupabase } from "../useSupabase";
+import { useQuery } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/query/keys";
+import { TransactionFilters, getTransactions } from "@/lib/services/transactions";
+
+export function useTransactionsQuery(filters: TransactionFilters = {}) {
+    const { user } = useUser();
+    const supabase = useSupabase();
+
+    return useQuery({
+        queryKey: queryKeys.transactions(user?.id, filters),
+        queryFn: () => getTransactions(supabase, user!.id, filters),
+        enabled: !!user,
+    });
+}
