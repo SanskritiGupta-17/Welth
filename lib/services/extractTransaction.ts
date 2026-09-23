@@ -4,8 +4,12 @@ import {
     CategoryKey,
 } from "@/constants/categories";
 
-const GEMINI_URL =
-    "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent";
+const CANDIDATE_MODELS = [
+    "gemini-3.5-flash-lite",
+    "gemini-3.5-flash",
+    "gemini-3.6-flash",
+    "gemini-3.1-flash-lite",
+];
 
 export type ExtractedTransaction = {
     type: "INCOME" | "EXPENSE" | null;
@@ -34,36 +38,54 @@ const RESPONSE_SCHEMA = {
 };
 
 async function callGemini(promptText: string, inlineData: { mimeType: string; data: string }) {
-    const apiKey = process.env.EXPO_PUBLIC_GEMINI_API_KEY;
+    const rawApiKey = process.env.EXPO_PUBLIC_GEMINI_API_KEY;
+    const apiKey = rawApiKey ? rawApiKey.trim() : null;
     if (!apiKey) throw new Error("Missing EXPO_PUBLIC_GEMINI_API_KEY");
 
-    const res = await fetch(`${GEMINI_URL}?key=${apiKey}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-            contents: [
-                {
-                    role: "user",
-                    parts: [{ text: promptText }, { inlineData }],
-                },
-            ],
-            generationConfig: {
-                responseMimeType: "application/json",
-                responseSchema: RESPONSE_SCHEMA,
-            },
-        }),
-    });
+    let lastError = "";
 
-    if (!res.ok) {
-        const errText = await res.text();
-        throw new Error(`Gemini request failed: ${errText}`);
+    for (const model of CANDIDATE_MODELS) {
+        try {
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+            const res = await fetch(url, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    contents: [
+                        {
+                            role: "user",
+                            parts: [{ text: promptText }, { inlineData }],
+                        },
+                    ],
+                    generationConfig: {
+                        responseMimeType: "application/json",
+                        responseSchema: RESPONSE_SCHEMA,
+                    },
+                }),
+            });
+
+            if (!res.ok) {
+                const errText = await res.text();
+                lastError = `${model}: ${errText}`;
+                if (res.status === 503 || res.status === 429 || res.status === 404) {
+                    console.warn(`Gemini model ${model} unavailable (${res.status}), trying fallback...`);
+                    continue;
+                }
+                throw new Error(`Gemini request failed: ${errText}`);
+            }
+
+            const data = await res.json();
+            const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (!text) throw new Error("No response from Gemini");
+
+            return JSON.parse(text) as ExtractedTransaction;
+        } catch (err: any) {
+            lastError = err?.message || String(err);
+            console.warn(`Error with ${model}:`, lastError);
+        }
     }
 
-    const data = await res.json();
-    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!text) throw new Error("No response from Gemini");
-
-    return JSON.parse(text) as ExtractedTransaction;
+    throw new Error(`All Gemini models failed. Last error: ${lastError}`);
 }
 
 export async function extractTransactionFromReceipt(

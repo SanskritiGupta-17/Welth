@@ -41,7 +41,14 @@
         }
       ],
       "@clerk/expo",
-      "expo-secure-store"
+      "expo-secure-store",
+      "expo-audio",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow Welth to access your camera to scan receipts"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
