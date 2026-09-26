@@ -2,18 +2,24 @@ import { format } from "date-fns";
 import { Transaction } from "./services/transactions";
 import { Directory, File, Paths } from "expo-file-system"
 import * as Sharing from "expo-sharing";
+import getSymbol from "currency-symbol-map";
 
 export const formatPrice = (
     value: number,
     currency: string = "INR",
 ): string => {
-    const locale = currency === "INR" ? "en-IN" : undefined;
-
-    return new Intl.NumberFormat(locale, {
-        style: "currency",
-        currency,
+    const symbol = getSymbol(currency) ?? currency;
+    const locale = currency === "INR" ? "en-IN" : "en-US";
+    const isNegative = value < 0;
+    const formattedNumber = new Intl.NumberFormat(locale, {
         maximumFractionDigits: 0,
-    }).format(value);
+    }).format(Math.abs(value));
+
+    const formattedWithSymbol = symbol === currency
+        ? `${symbol} ${formattedNumber}`
+        : `${symbol}${formattedNumber}`;
+
+    return isNegative ? `-${formattedWithSymbol}` : formattedWithSymbol;
 };
 
 const EXPORT_WINDOW_DAYS = 30;

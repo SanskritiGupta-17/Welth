@@ -5,6 +5,7 @@ import { getCategoryConfig } from '@/constants/categories';
 import { Feather } from '@expo/vector-icons';
 import { formatPrice } from '@/lib/utils';
 import { Swipeable } from 'react-native-gesture-handler';
+import { useUserStore } from '@/store/userStore';
 
 const INPUT_METHOD_ICON: Record<
     Transaction["input_method"],
@@ -25,6 +26,7 @@ export default function TransactionRow({
 
     const config = getCategoryConfig(tx.category);
     const isIncome = tx.type === "INCOME";
+    const currency = useUserStore((state) => state.currency);
 
     const row = (
         <View
@@ -60,7 +62,7 @@ export default function TransactionRow({
 
             <Text className={`text-sm font-medium ${isIncome ? "text-brand-success" : "text-brand-coral"}`}>
                 {isIncome ? "+" : "-"}
-                {formatPrice(tx.amount)}
+                {formatPrice(Math.abs(tx.amount), currency)}
             </Text>
         </View>
     );

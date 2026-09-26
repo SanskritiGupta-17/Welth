@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "noEmit": true,
+    "strict": true
+  },
+  "include": [
+    "**/*.ts",
+    "_shared/**/*.ts",
+    "_shared/**/*.d.ts"
+  ]
+}
